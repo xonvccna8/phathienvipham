@@ -4,14 +4,13 @@ import base64
 import time
 
 # Server URL
-SERVER_URL = "http://54.167.60.89:5555"
-
+SERVER_URL = "http://localhost:5555"
 
 # Initialize SocketIO client
 sio = socketio.Client()
 
 # Connect to the server
-sio.connect(SERVER_URL)
+sio.connect(SERVER_URL,wait_timeout=5)
 
 # Event handlers
 @sio.event
@@ -69,7 +68,7 @@ def main():
         # Limit frame rate to 5 FPS
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        time.sleep(0.2)
+        time.sleep(0.05)
 
     # Release resources
     cap.release()

@@ -6,11 +6,16 @@ from modules.SCRFD import SCRFD
 import base64
 import eventlet
 import requests
+from flask_cors import CORS
+
 eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
+CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Load the SCRFD model
 onnxmodel = 'models/scrfd_500m_kps.onnx'
@@ -110,7 +115,9 @@ def handle_frame(data):
                 'up': False,
                 'down': False,
                 'multiple_people_count': False,
+                'no_person': False
             },
+            'no_person_count': 0,  # Add no person count
             'room_participant_id': None
         }
 
@@ -140,7 +147,10 @@ def handle_frame(data):
     # Detect faces
     bboxes, lmarks, scores = mynet.detect(frame)
 
-    if bboxes.shape[0] > 0 and lmarks.shape[0] > 0:
+    if bboxes.shape[0] > 0:  # If faces are detected
+        violated['no_person'] = False  # Reset no person flag
+        client_data[sid]['no_person_count'] = 0  # Reset counter
+
         # Multiple people detection
         if bboxes.shape[0] >= 2:
             if not violated['multiple_people_count']:
@@ -177,6 +187,10 @@ def handle_frame(data):
         else:
             violated['up'] = False
             violated['down'] = False
+    else:  # No faces detected
+        client_data[sid]['no_person_count'] += 1
+        if not violated['no_person']:
+            violated['no_person'] = True
 
     # Prepare violation data
     violation_data = {
@@ -184,7 +198,8 @@ def handle_frame(data):
         'right': violation_counts['right'],
         'up': violation_counts['up'],
         'down': violation_counts['down'],
-        'multiple_people_count': violation_counts['multiple_people_count']
+        'multiple_people_count': violation_counts['multiple_people_count'],
+        'no_person_count': client_data[sid]['no_person_count']  # Add no person count
     }
 
     # Report violations to backend

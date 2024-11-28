@@ -4,3 +4,4 @@ python-socketio
 flask-socketio
 eventlet
 flask
+flask_cors
