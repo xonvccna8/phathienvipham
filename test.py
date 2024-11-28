@@ -10,7 +10,7 @@ SERVER_URL = "http://localhost:5555"
 sio = socketio.Client()
 
 # Connect to the server
-sio.connect(SERVER_URL,wait_timeout=5)
+sio.connect(SERVER_URL)
 
 # Event handlers
 @sio.event
